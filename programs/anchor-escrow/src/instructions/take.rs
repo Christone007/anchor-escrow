@@ -80,14 +80,20 @@ pub struct Take<'info> {
 // impl fn transfer, withdraw and close
 impl<'info> Take<'info> {
     pub fn deposit(&mut self, receive:u64) -> Result<()> {
+        // runs a Cpi to transfer from taker_ata_b to maker_ata_b
+        // ensure the amount equals the receive amount set in the escrow
         Ok(())
     }
 
     pub fn withdraw(&mut self, receive:u64) -> Result<()> {
+        // runs a Cpi to transfer from vault(holding token a) to taker_ata_a
+        // ensures everything in vault is transferred
         Ok(())
     }
 
     pub fn close_vault(&mut self) -> Result<()> {
-        
+        // closes the vault and sends the rent to the taker since he signed this transaction
+
+        Ok(())
     }
 }
