@@ -76,6 +76,6 @@ impl<'info> Make<'info> {
                 authority: self.maker.to_account_info(),
             });
 
-        transfer_checked(cpi_context, deposit, self.mint_a.decimals);
+        transfer_checked(cpi_context, deposit, self.mint_a.decimals)
     }
 }
