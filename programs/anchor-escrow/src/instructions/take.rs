@@ -98,12 +98,46 @@ impl<'info> Take<'info> {
     pub fn withdraw(&mut self, receive:u64) -> Result<()> {
         // runs a Cpi to transfer from vault(holding token a) to taker_ata_a
         // ensures everything in vault is transferred
-        Ok(())
+
+        let signer_seeds = &[&[
+            b"escrow",
+            self.maker.to_account_info().key.as_ref(),
+            &self.escrow.seeds.to_le_bytes(),
+            &[self.escrow.bump],
+        ]];
+
+        let cpi_ctx = CpiContext::new(
+            self.token_program.to_account_info(),
+            TransferChecked {
+                from: self.vault.to_account_info(),
+                to: self.taker_ata_a.to_account_info(),
+                mint: self.mint_a.to_account_info(),
+                authority: self.escrow.to_account_info(),
+            }
+        ).with_signer(signer_seeds);
+
+        transer_checked(cpi_ctx, self.vault.amount, self.mint_a.decimals)?;
     }
 
     pub fn close_vault(&mut self) -> Result<()> {
         // closes the vault and sends the rent to the taker since he signed this transaction
 
-        Ok(())
+        let signer_seeds = &[&[
+            b"escrow",
+            self.maker.to_account_info().key.as_ref(),
+            &self.escrow.seeds.to_le_bytes(),
+            &[self.escrow.bump],
+        ]];
+
+        let close_cpi_ctx = CpiContext::new(
+            self.token_program.to_account_info(),
+            CloseAccount {
+                account: self.vault.to_account_info(),
+                destination: self.taker.to_account_info(),
+                authority: self.escrow.to_account_info(),
+            }
+        ).with_signer(signer_seeds);
+        
+        close_account(close_cpi_ctx)
     }
 }
