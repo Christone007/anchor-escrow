@@ -79,10 +79,20 @@ pub struct Take<'info> {
 
 // impl fn transfer, withdraw and close
 impl<'info> Take<'info> {
-    pub fn deposit(&mut self, receive:u64) -> Result<()> {
+    pub fn deposit(&mut self, deposit:u64) -> Result<()> {
         // runs a Cpi to transfer from taker_ata_b to maker_ata_b
         // ensure the amount equals the receive amount set in the escrow
-        Ok(())
+        let cpi_ctx = CpiContext::new(
+            self.token_program.to_account_info(),
+            TransferChecked {
+                from: self.taker_ata_b.to_account_info(),
+                to: self.maker_ata_b.to_account_info(),
+                mint: self.mint_b.to_account_info(),
+                authority: self.taker.to_account_info(),
+            }
+        );
+
+        transfer_checked(cpi_ctx, deposit, self.mint_b.decimals)
     }
 
     pub fn withdraw(&mut self, receive:u64) -> Result<()> {
