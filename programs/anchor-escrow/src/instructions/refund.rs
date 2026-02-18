@@ -70,8 +70,16 @@ impl<'info> Refund<'info> {
         transfer_checked(transfer_cpi_ctx, self.vault.amount, self.mint_a.decimals)?;
 
         // close escrow and transfer
-        let close_accounts = CloseAccount {
-            account:
-        }
+
+        let close_cpi_ctx = CpiContext::new(
+            self.token_program.to_account_info(),
+            CloseAccount {
+                account: self.vault.to_acount_info(),
+                desination: self.maker.to_account_info(),
+                authority: self.escrow.to_account_info(),
+            }
+        ).with_signer;
+
+        close_account(close_cpi_ctx)
     }
 }
