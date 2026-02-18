@@ -93,9 +93,52 @@ describe("anchor-escrow", () => {
       confirmOpts
     );
 
+    makerAtaA = await createAssociatedTokenAccount(
+      connection,
+      maker,
+      mintA,
+      maker.publicKey,
+      confirmOpts
+    )
+
+    takerAtaB = await createAssociatedTokenAccount(
+      connection,
+      maker,
+      mintA,
+      maker.publicKey,
+      confirmOpts
+    )
+
+    await mintTo(
+      connection,
+      maker,
+      mintA,
+      makerAtaA,
+      maker.publicKey,
+      100_000_000,
+      undefined,
+      confirmOpts,
+    );
+
+    await mintTo(
+      connection,
+      taker,
+      mintB,
+      takerAtaB,
+      taker.publicKey,
+      100_000_000,
+      undefined,
+      confirmOpts
+    );
+
   });
 
-  it("make", async() => {});
+  it("make", async() => {
+    const escrow = getEscrowPda(maker.publicKey, seed);
+    const vault = getVaultAta(escrow, mintA);
+
+    await program.methods.
+  });
 
   it("take", async() => {});
 

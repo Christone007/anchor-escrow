@@ -50,12 +50,25 @@ pub struct Refund<'info> {
 impl<'info> Refund<'info> {
     pub fn refund_and_close_vault(&mut self) -> Result<()> {
         // transfer vault funds to maker_ata_a
-        let signer_seeds = &[&[
-            b"escrow",
-            self.maker.to_account_info().key.as_ref(),
-            &self.escrow.seeds.to_le_bytes(),
-            &[self.escrow.bump],
-        ]];
+        // let signer_seeds = &[&[
+        //     b"escrow",
+        //     self.maker.key().as_ref(),
+        //     &self.escrow.seeds.to_le_bytes().as_ref(),
+        //     &[self.escrow.bump],
+        // ]];
+
+        let maker_key = self.maker.key();
+        let seeds_bytes = self.escrow.seeds.to_le_bytes();
+        let bump = [self.escrow.bump];
+
+        let seeds = &[
+            b"escrow".as_ref(),
+            maker_key.as_ref(),
+            seeds_bytes.as_ref(),
+            bump.as_ref(),
+        ];
+
+        let signer_seeds = &[&seeds[..]];
 
         let transfer_cpi_ctx = CpiContext::new(
             self.token_program.to_account_info(),
@@ -64,8 +77,8 @@ impl<'info> Refund<'info> {
                 to: self.maker_ata_a.to_account_info(),
                 mint: self.mint_a.to_account_info(),
                 authority: self.escrow.to_account_info(),
-            }
-        ).with_signer(signer_seeds);
+            }).with_signer(signer_seeds);
+            
 
         transfer_checked(transfer_cpi_ctx, self.vault.amount, self.mint_a.decimals)?;
 
@@ -75,7 +88,7 @@ impl<'info> Refund<'info> {
             self.token_program.to_account_info(),
             CloseAccount {
                 account: self.vault.to_account_info(),
-                desination: self.maker.to_account_info(),
+                destination: self.maker.to_account_info(),
                 authority: self.escrow.to_account_info(),
             }
         ).with_signer(signer_seeds);

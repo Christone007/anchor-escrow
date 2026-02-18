@@ -2,7 +2,6 @@ use anchor_lang::prelude::*;
 
 use crate::Escrow;
 use anchor_spl::{
-    SystemAccount,
     associated_token::AssociatedToken,
     token_interface::{
         close_account, transfer_checked, CloseAccount, Mint, TokenAccount, TokenInterface, TransferChecked,
@@ -95,16 +94,29 @@ impl<'info> Take<'info> {
         transfer_checked(cpi_ctx, deposit, self.mint_b.decimals)
     }
 
-    pub fn withdraw(&mut self, receive:u64) -> Result<()> {
+    pub fn withdraw(&mut self) -> Result<()> {
         // runs a Cpi to transfer from vault(holding token a) to taker_ata_a
         // ensures everything in vault is transferred
 
-        let signer_seeds = &[&[
-            b"escrow",
-            self.maker.to_account_info().key.as_ref(),
-            &self.escrow.seeds.to_le_bytes(),
-            &[self.escrow.bump],
-        ]];
+        // let signer_seeds = &[&[
+        //     b"escrow",
+        //     self.maker.to_account_info().key.as_ref(),
+        //     &self.escrow.seeds.to_le_bytes(),
+        //     &[self.escrow.bump],
+        // ]];
+
+        let maker_key = self.maker.key();
+        let seeds_bytes = self.escrow.seeds.to_le_bytes();
+        let bump = [self.escrow.bump];
+
+        let seeds = &[
+            b"escrow".as_ref(),
+            maker_key.as_ref(),
+            seeds_bytes.as_ref(),
+            bump.as_ref(),
+        ];
+
+        let signer_seeds = &[&seeds[..]];
 
         let cpi_ctx = CpiContext::new(
             self.token_program.to_account_info(),
@@ -116,18 +128,31 @@ impl<'info> Take<'info> {
             }
         ).with_signer(signer_seeds);
 
-        transer_checked(cpi_ctx, self.vault.amount, self.mint_a.decimals)?;
+        transfer_checked(cpi_ctx, self.vault.amount, self.mint_a.decimals)
     }
 
     pub fn close_vault(&mut self) -> Result<()> {
         // closes the vault and sends the rent to the taker since he signed this transaction
 
-        let signer_seeds = &[&[
-            b"escrow",
-            self.maker.to_account_info().key.as_ref(),
-            &self.escrow.seeds.to_le_bytes(),
-            &[self.escrow.bump],
-        ]];
+        // let signer_seeds = &[&[
+        //     b"escrow",
+        //     self.maker.to_account_info().key.as_ref(),
+        //     &self.escrow.seeds.to_le_bytes(),
+        //     &[self.escrow.bump],
+        // ]];
+
+        let maker_key = self.maker.key();
+        let seeds_bytes = self.escrow.seeds.to_le_bytes();
+        let bump = [self.escrow.bump];
+
+        let seeds = &[
+            b"escrow".as_ref(),
+            maker_key.as_ref(),
+            seeds_bytes.as_ref(),
+            bump.as_ref(),
+        ];
+
+        let signer_seeds = &[&seeds[..]];
 
         let close_cpi_ctx = CpiContext::new(
             self.token_program.to_account_info(),
