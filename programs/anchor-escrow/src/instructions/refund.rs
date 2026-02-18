@@ -74,11 +74,11 @@ impl<'info> Refund<'info> {
         let close_cpi_ctx = CpiContext::new(
             self.token_program.to_account_info(),
             CloseAccount {
-                account: self.vault.to_acount_info(),
+                account: self.vault.to_account_info(),
                 desination: self.maker.to_account_info(),
                 authority: self.escrow.to_account_info(),
             }
-        ).with_signer;
+        ).with_signer(signer_seeds);
 
         close_account(close_cpi_ctx)
     }
