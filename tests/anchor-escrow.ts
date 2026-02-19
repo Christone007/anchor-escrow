@@ -8,7 +8,8 @@ import {
   getAssociatedTokenAddressSync,
   getAccount,
   TOKEN_PROGRAM_ID,
-  createNativeMintInstructionData
+  createNativeMintInstructionData,
+  TokenAccountNotFoundError
 } from "@solana/spl-token";
 
 import { 
@@ -103,9 +104,9 @@ describe("anchor-escrow", () => {
 
     takerAtaB = await createAssociatedTokenAccount(
       connection,
-      maker,
-      mintA,
-      maker.publicKey,
+      taker,
+      mintB,
+      taker.publicKey,
       confirmOpts
     )
 
@@ -137,16 +138,53 @@ describe("anchor-escrow", () => {
     const escrow = getEscrowPda(maker.publicKey, seed);
     const vault = getVaultAta(escrow, mintA);
 
-    await program.methods.
+  await program.methods
+    .make(seed, receiveAmount, depositAmount)
+    .accountsPartial({
+      maker: maker.publicKey,
+      mintA,
+      mintB,
+      makerAtaA,
+      escrow,
+      vault,
+      tokenProgram: TOKEN_PROGRAM_ID,
+    })
+    .signers([maker])
+    .rpc(confirmOpts);
+
+    const escrowAccount = await program.account.escrow.fetch(escrow);
+    expect(escrowAccount.seeds.toNumber()).to.equal(seed.toNumber());
+    expect(escrowAccount.maker.toBase58()).to.equal(maker.publicKey.toBase58());
+    expect(escrowAccount.mintA.toBase58()).to.equal(mintA.toBase58());
+    expect(escrowAccount.mintB.toBase58()).to.equal(mintB.toBase58());
+    expect(escrowAccount.receive.toNumber()).to.equal(receiveAmount.toNumber());
+
+    const vaultAccount = await getAccount(connection, vault);
+    expect(Number(vaultAccount.amount)).to.equal(depositAmount.toNumber());
   });
 
-  it("take", async() => {});
+  it("take", async() => {
+    const escrow = getEscrowPda(maker.publicKey, seed);
+    const vault = getVaultAta(escrow, mintA);
+
+    await program.methods
+    .take(receiveAmount)
+    .accountsPartial({
+      taker: taker.publicKey,
+      maker: maker.publicKey,
+      mintA,
+      mintB,
+      takerAtaB,
+      makerAtaA,
+      escrow,
+      vault,
+      tokenProgram: TOKEN_PROGRAM_ID,
+    })
+    .signers([taker])
+    .rpc(confirmOpts);
+    })
+  });
 
   it("refund", async() => {});
 
-  it("Is initialized!", async () => {
-    // Add your test here.
-    const tx = await program.methods.initialize().rpc();
-    console.log("Your transaction signature", tx);
-  });
 });

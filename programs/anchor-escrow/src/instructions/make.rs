@@ -3,7 +3,7 @@ use anchor_lang::prelude::*;
 use crate::Escrow;
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked},
+    token_interface::{transfer_checked, Mint, TokenAccount, TokenInterface, TransferChecked}
 };
 
 #[derive(Accounts)]
