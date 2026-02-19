@@ -20,7 +20,7 @@ pub struct Take<'info> {
     // if taker does not have an ATA to receive token A, create it
     #[account(
         init_if_needed,
-        payer = maker,
+        payer = taker,
         associated_token::mint = mint_a,
         associated_token::authority = taker,
         associated_token::token_program = token_program
@@ -39,9 +39,9 @@ pub struct Take<'info> {
     // ensure maker can receive token B into an ATA
      #[account(
         init_if_needed,
-        payer = maker,
+        payer = taker,
         associated_token::mint = mint_b,
-        associated_token::authority = taker,
+        associated_token::authority = maker,
         associated_token::token_program = token_program
     )]
     pub maker_ata_b: InterfaceAccount<'info, TokenAccount>,
@@ -50,16 +50,16 @@ pub struct Take<'info> {
     pub mint_a: InterfaceAccount<'info, Mint>,
     pub mint_b: InterfaceAccount<'info, Mint>,
 
-    // Close the escrow after everything and return rent to maker
+    // Close the escrow after everything and return rent to taker
     #[account(
         mut,
-        close = maker,
+        close = taker,
         has_one = mint_a,
         has_one = maker,
         seeds = [b"escrow", maker.key().as_ref(), &escrow.seeds.to_le_bytes()],
         bump = escrow.bump
     )]
-    pub escrow: Account<'info, Escrow>,
+    pub escrow: Box<Account<'info, Escrow>>,
 
     // The vault to be emptied into the takers ata a
     #[account(
@@ -68,7 +68,7 @@ pub struct Take<'info> {
         associated_token::authority = escrow,
         associated_token::token_program = token_program
     )]
-    pub vault: InterfaceAccount<'info, TokenAccount>,
+    pub vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     // other programs
     pub associated_token_program: Program<'info, AssociatedToken>,

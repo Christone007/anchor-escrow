@@ -210,9 +210,60 @@ describe("anchor-escrow", () => {
     // confirm that the vault account is now closed
     const vaultAccount = await connection.getAccountInfo(vault);
     expect(vaultAccount).to.be.null;
-
   });
 
-  it("refund", async() => {});
+  describe("refund", async() => {
+    const refundSeed = new BN(2);
+
+    before(async () => {
+      const escrow = getEscrowPda(maker.publicKey, refundSeed);
+      const vault = getVaultAta(escrow, mintA);
+
+      await program.methods
+        .make(refundSeed, receiveAmount, depositAmount)
+        .accountsPartial({
+          maker: maker.publicKey,
+          mintA,
+          mintB,
+          makerAtaA,
+          escrow,
+          vault,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([maker])
+        .rpc(confirmOpts);  
+    });
+
+    it("refund", async() => {
+      const escrow = getEscrowPda(maker.publicKey, refundSeed);
+      const vault = getVaultAta(escrow, mintA);
+
+      const makerAtaABefore = await getAccount(connection, makerAtaA);
+
+      await program.methods
+        .refund()
+        .accountsPartial({
+          maker: maker.publicKey,
+          mintA,
+          makerAtaA,
+          escrow,
+          vault,
+          tokenProgram: TOKEN_PROGRAM_ID,
+        })
+        .signers([maker])
+        .rpc(confirmOpts);
+
+        const makerAtaAAfter = await getAccount(connection, makerAtaA);
+        expect(Number(makerAtaAAfter.amount)).to.equal(
+          Number(makerAtaABefore.amount) + depositAmount.toNumber()
+        );
+
+        const escrowAccount = await connection.getAccountInfo(escrow);
+        expect(escrowAccount).to.be.null;
+
+        const vaultAccount = await connection.getAccountInfo(vault);
+        expect(vaultAccount).to.be.null;
+    })
+  });
 
 });
