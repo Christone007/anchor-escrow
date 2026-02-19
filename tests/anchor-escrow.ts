@@ -166,6 +166,10 @@ describe("anchor-escrow", () => {
   it("take", async() => {
     const escrow = getEscrowPda(maker.publicKey, seed);
     const vault = getVaultAta(escrow, mintA);
+    const takerAtaA = getAssociatedTokenAddressSync(mintA, taker.publicKey);
+    const makerAtaB = getAssociatedTokenAddressSync(mintB, maker.publicKey);
+
+    const takerAtaBBefore= await getAccount(connection, takerAtaB);
 
     await program.methods
     .take(receiveAmount)
@@ -174,15 +178,39 @@ describe("anchor-escrow", () => {
       maker: maker.publicKey,
       mintA,
       mintB,
+      takerAtaA,
       takerAtaB,
-      makerAtaA,
+      makerAtaB,
       escrow,
       vault,
       tokenProgram: TOKEN_PROGRAM_ID,
     })
     .signers([taker])
     .rpc(confirmOpts);
-    })
+
+
+    // confirm that taker received the correct amount of mint A
+    const takerAtaAAccount = await getAccount(connection, takerAtaA);
+    expect(Number(takerAtaAAccount.amount)).to.equal(depositAmount.toNumber());
+
+    // confirm that maker received the correct amount of mint B
+    const makerAtaBAccount = await getAccount(connection, makerAtaB);
+    expect(Number(makerAtaBAccount.amount)).to.equal(receiveAmount.toNumber());
+
+    // confirm that taker's mint B balance decreased by the correct amount
+    const takerAtaBAfter = await getAccount(connection, takerAtaB);
+    expect(Number(takerAtaBAfter.amount)).to.equal(
+      Number(takerAtaBBefore.amount) - receiveAmount.toNumber()
+    );
+
+    // confirm that the escrow is now closed
+    const escrowAccount = await connection.getAccountInfo(escrow);
+    expect(escrowAccount).to.be.null;
+
+    // confirm that the vault account is now closed
+    const vaultAccount = await connection.getAccountInfo(vault);
+    expect(vaultAccount).to.be.null;
+
   });
 
   it("refund", async() => {});
